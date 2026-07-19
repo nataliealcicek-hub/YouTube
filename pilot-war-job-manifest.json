@@ -1,0 +1,19 @@
+{
+  "style_key_image": "94383636-970d-4adb-8a91-3eb0233a0754",
+  "voice": {"name": "Cillian", "voice_id": "d8ba9f14-8a24-44db-932b-99e16c45bd32", "voice_type": "preset"},
+  "output": {"width": 1920, "height": 1080},
+  "blocks": [
+    {"n": 1, "clip": "b7bfa460-271a-4d8c-b3c6-648ea73c642c", "voice": "fb70a017-9e92-45de-b54c-424466d9d623"},
+    {"n": 2, "clip": "4ba24b5e-9166-4018-a6cf-af65e498eeac", "voice": "7aba8085-65d7-4612-9564-45c7a5a0e96b"},
+    {"n": 3, "clip": "36fdd93c-872e-4a65-9371-5d4ec21be890", "voice": "b6d9fef7-ff73-4548-8181-9cdcbaf04b90"},
+    {"n": 4, "clip": "c0147228-58cf-47ee-bc82-461cfe758a4d", "voice": "f7b9d614-6ab4-45d9-8544-d6e3f90e64ae"},
+    {"n": 5, "clip": "62bf31bc-e772-4cab-891b-814c24c80bc7", "voice": "d71e93ad-2d48-4dcb-9b39-ed95fa788ecb"},
+    {"n": 6, "clip": "9075d795-14fc-4d4e-9a1f-96ad1c11c3e1", "voice": "9f272e00-fc29-4909-a0ef-5e707d327dee"},
+    {"n": 7, "clip": "27156295-ba38-4b34-b9c1-3d098e7fed66", "voice": "c6dc1d61-4b6a-42a1-8100-5f83c57ea872"},
+    {"n": 8, "clip": "64fa58cf-500d-4ddf-a575-818ea1f138ca", "voice": "a158e6f1-3b8c-479f-9e30-c6c1d5424812"},
+    {"n": 9, "clip": "69e3abe7-bd38-4389-b471-a42ec5cd2d27", "voice": "2590cfc8-a8d6-47d1-8b9d-6c41be62f7b0"},
+    {"n": 10, "clip": "89bcc2f5-a803-4a75-9a5e-4ca02e629951", "voice": "53eeb3d4-3f32-4ba1-962b-2fe48e9d98bd"},
+    {"n": 11, "clip": "b822644f-5097-463a-bfe6-ee724ff19332", "voice": "48a2a9b3-426f-4573-8e02-4e709eb5d111"},
+    {"n": 12, "clip": "6f25ebbb-089e-425e-92dc-3413262aa0e2", "voice": "19609f97-6710-4989-a9ee-3ce598b6b68a"}
+  ]
+}

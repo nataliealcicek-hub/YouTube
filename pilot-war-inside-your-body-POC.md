@@ -30,11 +30,13 @@
 | 11 | That alarm is why a wound turns red, hot, and swollen. That is not the infection hurting you. That swelling is your reinforcements arriving at the front. | Wound site glows red/hot/swollen; teal reinforcements rush in along the vessel-highway. |
 | 12 | The first soldiers are holding the line, barely. But the real battle is only beginning. And deep inside you, your deadliest weapons are just waking up. | Hero holds the front line; powerful new elite silhouettes stir and glow in the background. |
 
-## Pipeline status
-- Style key image: ✅ generated (job `94383636…`)
-- Block 1 test clip: submitted (job `b7bfa460…`)
-- Blocks 2–12: pending test confirmation
-- Voice takes ×12: pending (voice = Cillian)
-- Final assembly (`explainer_video`, 1920×1080): pending
+## Pipeline status — ✅ COMPLETE
+- Style key image: ✅ `94383636-970d-4adb-8a91-3eb0233a0754`
+- 12 × Seedance 2.0 clips @ 1080p 16:9: ✅ all rendered
+- 12 × Seed Audio narration takes (voice: Cillian): ✅ all rendered
+- Final assembly (`explainer_video`, 1920×1080): ✅ job `743577ce-206c-4fcf-bbad-26e3a7608d69`
+- **Final MP4:** https://d8j0ntlcm91z4.cloudfront.net/user_3EMGm7xzkClXL1IjHLUtSDY9muk/hf_20260719_235530_743577ce-206c-4fcf-bbad-26e3a7608d69.mp4
+- **Credits spent:** ~1,095 (3,000 → 1,905 remaining)
+- Runtime: 2:00 exact (12 blocks × 10s)
 
 *Full 5–7 min script continues in `kurzgesagt-viral-scripts.md` (Script 3). This POC is the first ~2 min; the remaining acts (the kill order, memory cells, payoff) extend it to the full ~6 min video.*
