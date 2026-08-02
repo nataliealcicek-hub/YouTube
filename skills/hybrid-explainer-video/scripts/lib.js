@@ -1,0 +1,284 @@
+/* Episode 2 — shared drawing toolkit.
+   Flat cut-paper / gouache aesthetic, deterministic: every visual is a pure
+   function of scene time t, so frames can be rendered out of order. */
+
+const P = {
+  cream:   '#F7EDDA',
+  paper:   '#EFDFC2',
+  ink:     '#171216',
+  crimson: '#CE3450',
+  crimDeep:'#71162B',
+  crimDark:'#3E1020',
+  teal:    '#28F0DD',
+  tealDeep:'#13BDB2',
+  gold:    '#FFD152',
+  goldDeep:'#DBA02B',
+  acid:    '#DDF04F',
+  sick:    '#8FD07A',
+  grey:    '#7A707A',
+  /* Episode 3 colour code */
+  lav:     '#C6A0FF',   // glycine
+  lavDeep: '#8A5FCE',
+  amber:   '#FFB44F',   // calcium
+  amberDeep:'#D4821F',
+  slate:   '#221542',   // environment
+  chalk:   '#E5DACA',   // undissolved mineral
+};
+
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, u) => a + (b - a) * u;
+const smoothstep = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+const easeInOut = u => (u = clamp(u, 0, 1)) < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+const easeOut = u => 1 - Math.pow(1 - clamp(u, 0, 1), 3);
+const pulse = (t, period, w) => Math.exp(-Math.pow(((t % period) / period - .5) * w, 2));
+
+/* deterministic hash-based PRNG — rnd(i) is stable across frames */
+function rnd(i) {
+  let x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+function rrange(i, a, b) { return a + rnd(i) * (b - a); }
+
+/* ---------- texture ---------- */
+let _grain = null;
+function grainTile(doc) {
+  if (_grain) return _grain;
+  const c = doc.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const img = g.createImageData(256, 256);
+  for (let i = 0; i < 256 * 256; i++) {
+    const v = 128 + (rnd(i * 1.37) - .5) * 190;
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  _grain = c;
+  return c;
+}
+
+function grain(ctx, W, H, alpha, doc) {
+  const tile = grainTile(doc);
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = alpha;
+  for (let x = 0; x < W; x += 256) for (let y = 0; y < H; y += 256) ctx.drawImage(tile, x, y);
+  ctx.restore();
+}
+
+/* Brighten and saturate a hex colour. Lifting the background here fixes every
+   scene at once instead of retuning twelve by hand. */
+function lift(hex, gain, sat) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const l = (r + g + b) / 3;
+  r = clamp(l + (r - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  g = clamp(l + (g - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  b = clamp(l + (b - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  return `rgb(${Math.round(clamp(r, 0, 255))},${Math.round(clamp(g, 0, 255))},${Math.round(clamp(b, 0, 255))})`;
+}
+
+/* Frame the shot without crushing the mid-tones. */
+function vignette(ctx, W, H, strength) {
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * .30, W / 2, H / 2, H * .92);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, `rgba(14,6,14,${strength * .62})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function bg(ctx, W, H, inner, outer) {
+  const g = ctx.createRadialGradient(W / 2, H * .5, 0, W / 2, H * .5, H * 1.05);
+  g.addColorStop(0, lift(inner, 1.55, 1.45));
+  g.addColorStop(1, lift(outer, 1.5, 1.4));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- 2.5D camera ----------
+   Scenes stay flat, but they are composited onto depth planes and viewed
+   through a slowly drifting camera. Near planes move further than far ones,
+   which is what the eye reads as space. Everything is a function of t, so
+   frames remain independently reproducible. */
+function camera(t, dur, amp) {
+  amp = amp === undefined ? 1 : amp;
+  const u = clamp(t / dur, 0, 1);
+  return {
+    x: Math.sin(u * Math.PI * 0.85 + 0.5) * 46 * amp,
+    y: Math.cos(u * Math.PI * 0.65 + 0.2) * 26 * amp,
+    z: lerp(-0.035, 0.045, easeInOut(u)) * amp,    // gentle dolly
+    roll: Math.sin(u * Math.PI * 0.55) * 0.0045 * amp,
+  };
+}
+
+/* Draw fn on a plane at `depth` (0 = far, 1 = near) as seen by camera c.
+   `base` scales the plane up so its edges never slide into frame. */
+function layer(ctx, W, H, c, depth, fn, base) {
+  const par = depth - 0.5;                          // signed distance from focal plane
+  const s = (base || 1) * (1 + c.z * (0.5 + depth * 1.7));
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(c.roll * (0.35 + depth));
+  ctx.scale(s, s);
+  ctx.translate(-c.x * par * 2.6, -c.y * par * 2.6);
+  ctx.translate(-W / 2, -H / 2);
+  fn();
+  ctx.restore();
+}
+
+/* Near-field particles drifting in front of everything. Because they sit at
+   depth ~1 they swing much further than the scene, which sells the depth
+   more cheaply than anything happening inside the scene itself. */
+function foreDust(ctx, W, H, t, c, color, n, alpha) {
+  layer(ctx, W, H, c, 1.0, () => {
+    for (let i = 0; i < (n || 18); i++) {
+      const x = (rrange(i, -200, W + 200) + Math.sin(t * .18 + i) * 60);
+      const y = (rrange(i + 300, -100, H + 100) + t * rrange(i + 90, -9, 9));
+      const r = rrange(i + 50, 5, 16);
+      const a = (alpha || .1) * (.35 + .65 * Math.abs(Math.sin(t * .4 + i)));
+      const g = ctx.createRadialGradient(x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, 0,
+                                         x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, r * 3.2);
+      g.addColorStop(0, hexA(color, a));
+      g.addColorStop(1, hexA(color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, r * 3.2, 0, TAU);
+      ctx.fill();
+    }
+  });
+}
+
+/* ---------- primitives ---------- */
+function glow(ctx, x, y, r, color, alpha) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, hexA(color, alpha));
+  g.addColorStop(.45, hexA(color, alpha * .35));
+  g.addColorStop(1, hexA(color, 0));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+}
+
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${clamp(a, 0, 1)})`;
+}
+
+/* organic wobbling blob, cut-paper silhouette */
+function blobPath(ctx, cx, cy, r, wob, t, seed, lobes) {
+  lobes = lobes || 7;
+  ctx.beginPath();
+  const steps = 90;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * TAU;
+    let rr = r;
+    for (let k = 1; k <= 3; k++) {
+      rr += Math.sin(a * (lobes + k) + t * (.5 + k * .25) + rrange(seed * 7 + k, 0, TAU)) * r * wob / k;
+    }
+    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/* draw a shape with a cut-paper drop shadow beneath it */
+function paper(ctx, pathFn, fill, shadowA, dx, dy) {
+  ctx.save();
+  ctx.translate(dx === undefined ? 6 : dx, dy === undefined ? 10 : dy);
+  pathFn();
+  ctx.fillStyle = `rgba(10,4,10,${shadowA === undefined ? .35 : shadowA})`;
+  ctx.fill();
+  ctx.restore();
+  pathFn();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function strokePath(ctx, pathFn, color, w, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha === undefined ? 1 : alpha;
+  pathFn();
+  ctx.strokeStyle = color; ctx.lineWidth = w;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* smooth curve through points */
+function curve(ctx, pts, close) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i], p1 = pts[i + 1];
+    const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
+    ctx.quadraticCurveTo(p0[0], p0[1], mx, my);
+  }
+  ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+  if (close) ctx.closePath();
+}
+
+/* ---------- labels (leader line + small caps) ---------- */
+function label(ctx, tx, ty, ax, ay, text, alpha, color, size) {
+  if (alpha <= .01) return;
+  color = color || P.cream;
+  size = size || 26;
+  ctx.save();
+  ctx.globalAlpha = clamp(alpha, 0, 1);
+
+  // keep the text block inside the safe area, flipping sides if it would clip
+  const M = 54, cw = ctx.canvas.width, ch = ctx.canvas.height;
+  ctx.font = `500 ${size}px "DejaVu Sans", Arial, sans-serif`;
+  const tw = ctx.measureText(text).width;
+  let right = tx < ax;                       // text sits left of anchor, right-aligned
+  if (right && tx - tw - 6 < M) {
+    if (ax + tw + 60 < cw - M) { right = false; tx = ax + 60; }
+    else tx = M + tw + 6;
+  } else if (!right && tx + tw + 6 > cw - M) {
+    if (ax - tw - 60 > M) { right = true; tx = ax - 60; }
+    else tx = cw - M - tw - 6;
+  }
+  ty = clamp(ty, M, ch - M);
+  ctx.strokeStyle = hexA(color, .75);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(ax, ay, 5, 0, TAU);
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(right ? tx + 14 : tx - 14, ty);
+  ctx.lineTo(tx, ty);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = right ? 'right' : 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, tx + (right ? -6 : 6), ty);
+  ctx.restore();
+}
+
+/* fade helper for a scene: dark in/out at the seams so blocks cut cleanly */
+function seams(ctx, W, H, t, dur) {
+  const a = 1 - smoothstep(0, .55, t) * smoothstep(0, .55, dur - t);
+  if (a > .001) { ctx.fillStyle = `rgba(8,4,8,${a})`; ctx.fillRect(0, 0, W, H); }
+}
+
+/* travelling pulses along a polyline path */
+function pulsesAlong(ctx, pts, t, speed, count, color, size, phase) {
+  const segs = [];
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const d = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+    segs.push(d); total += d;
+  }
+  for (let k = 0; k < count; k++) {
+    let u = ((t * speed + k / count + (phase || 0)) % 1) * total;
+    for (let i = 0; i < segs.length; i++) {
+      if (u <= segs[i]) {
+        const f = u / segs[i];
+        const x = lerp(pts[i][0], pts[i + 1][0], f), y = lerp(pts[i][1], pts[i + 1][1], f);
+        glow(ctx, x, y, size * 3, color, .5);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, size, 0, TAU); ctx.fill();
+        break;
+      }
+      u -= segs[i];
+    }
+  }
+}

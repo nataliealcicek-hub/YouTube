@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#000}canvas{display:block}</style></head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="lib.js"></script>
+<script src="anatomy.js"></script>
+<script src="scenes.js"></script>
+<script>
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d', { alpha: false });
+let W = cv.width, H = cv.height;
+
+/* The renderer drives the frame size, so the same scenes can be output
+   landscape for YouTube or vertical for TikTok/Reels/Shorts. Scenes lay
+   themselves out in fractions of W and H, so most reflow on their own. */
+function setSize(w, h) {
+  cv.width = w; cv.height = h;
+  off.width = w; off.height = h;
+  W = w; H = h;
+}
+
+/* Scenes draw into an offscreen buffer, then composite through one colour
+   grade. Grading in a single place keeps all twelve blocks consistent. */
+const off = document.createElement('canvas');
+off.width = W; off.height = H;
+const octx = off.getContext('2d', { alpha: false });
+const GRADE = 'saturate(1.30) contrast(1.05) brightness(1.06)';
+
+/* Depth accents per block — which colour the near-field dust picks up. */
+const FORE = [];   // optional per-block accent for the near-field dust
+
+function renderFrame(sceneIndex, t) {
+  octx.save();
+  octx.setTransform(1, 0, 0, 1, 0, 0);
+  octx.fillStyle = '#000';
+  octx.fillRect(0, 0, W, H);
+
+  // The scene is a plane in space rather than the frame itself. Scaling it
+  // slightly past full-frame keeps its edges out of shot as the camera drifts.
+  // Depth 0.45 puts the scene just in front of the focal plane, so it drifts
+  // slightly against the far motes. Base scale only needs to cover the dolly's
+  // minimum (z = -0.035) plus the roll — 1.045 does it without cropping.
+  // Anatomy primitives are drawn at absolute pixel sizes against a 16:9
+  // reference, so in a tall frame they read small. A modest fill scale fixes
+  // that; kept at 1.10 because the widest composition (the chelate) starts
+  // clipping past roughly 1.15 in a 1080-wide frame.
+  const c = camera(t, typeof DUR === 'number' ? DUR : 10);
+  const fill = 1.045 * (H > W ? 1.10 : 1);
+  layer(octx, W, H, c, 0.45, () => SCENES[sceneIndex](octx, t, W, H), fill);
+
+  // near-field particles, which parallax hard against the scene plane
+  foreDust(octx, W, H, t, c, FORE[sceneIndex] || '#FFFFFF', 16, 0.085);
+  octx.restore();
+
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.filter = GRADE;
+  ctx.drawImage(off, 0, 0);
+  ctx.filter = 'none';
+  ctx.restore();
+}
+
+function frameJPEG(sceneIndex, t) {
+  renderFrame(sceneIndex, t);
+  return cv.toDataURL('image/jpeg', 0.94).split(',')[1];
+}
+window.__ready = true;
+</script>
+</body>
+</html>
