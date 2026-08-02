@@ -3,19 +3,19 @@
    function of scene time t, so frames can be rendered out of order. */
 
 const P = {
-  cream:   '#EFE3CE',
-  paper:   '#E3D2B6',
+  cream:   '#F7EDDA',
+  paper:   '#EFDFC2',
   ink:     '#171216',
-  crimson: '#9E2A3B',
-  crimDeep:'#4B1220',
-  crimDark:'#2B0C16',
-  teal:    '#1FD3C6',
-  tealDeep:'#0E8F88',
-  gold:    '#F3C34A',
-  goldDeep:'#B8862A',
-  acid:    '#C9D94B',
-  sick:    '#7FB069',
-  grey:    '#6A6167',
+  crimson: '#CE3450',
+  crimDeep:'#71162B',
+  crimDark:'#3E1020',
+  teal:    '#28F0DD',
+  tealDeep:'#13BDB2',
+  gold:    '#FFD152',
+  goldDeep:'#DBA02B',
+  acid:    '#DDF04F',
+  sick:    '#8FD07A',
+  grey:    '#7A707A',
 };
 
 const TAU = Math.PI * 2;
@@ -60,18 +60,31 @@ function grain(ctx, W, H, alpha, doc) {
   ctx.restore();
 }
 
+/* Brighten and saturate a hex colour. Used to lift the scene backgrounds in one
+   place rather than retuning twelve scenes by hand. */
+function lift(hex, gain, sat) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const l = (r + g + b) / 3;
+  r = clamp(l + (r - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  g = clamp(l + (g - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  b = clamp(l + (b - l) * (sat || 1.35), 0, 255) * (gain || 1);
+  return `rgb(${Math.round(clamp(r, 0, 255))},${Math.round(clamp(g, 0, 255))},${Math.round(clamp(b, 0, 255))})`;
+}
+
+/* The vignette was crushing the mid-tones; keep the framing but lighten it. */
 function vignette(ctx, W, H, strength) {
-  const g = ctx.createRadialGradient(W / 2, H / 2, H * .25, W / 2, H / 2, H * .85);
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * .30, W / 2, H / 2, H * .92);
   g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, `rgba(8,4,8,${strength})`);
+  g.addColorStop(1, `rgba(14,6,14,${strength * .62})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 }
 
 function bg(ctx, W, H, inner, outer) {
   const g = ctx.createRadialGradient(W / 2, H * .5, 0, W / 2, H * .5, H * 1.05);
-  g.addColorStop(0, inner);
-  g.addColorStop(1, outer);
+  g.addColorStop(0, lift(inner, 1.55, 1.45));
+  g.addColorStop(1, lift(outer, 1.5, 1.4));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 }

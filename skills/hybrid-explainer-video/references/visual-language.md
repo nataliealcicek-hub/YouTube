@@ -20,6 +20,42 @@ The reason to be strict: with a consistent code, a viewer learns your visual gra
 the first twenty seconds and can then read later blocks without labels. Break the code and
 every block has to re-explain itself.
 
+## Vibrancy: the mistake this pipeline makes by default
+
+Flat vector art on a dark ground has a strong tendency to come out **muddy**, and the
+reason is worth understanding because it is not obvious while you work. Three things
+compound:
+
+1. Backgrounds get written as very dark hexes (`#150610`) because that is how a moody
+   interior is imagined in the abstract.
+2. `grain()` in `overlay` mode pulls mid-tones toward neutral grey.
+3. `vignette()` darkens the edges on top of that.
+
+Each is defensible alone; stacked, they desaturate the whole frame. It looks fine while
+you are writing coordinates and disappointing when the finished video plays next to
+anything else.
+
+Two guards are built into `lib.js`, so you get them for free:
+
+- **`bg()` lifts its stops through `lift()`** before painting, so dark background hexes
+  are brightened and saturated automatically. Keep writing backgrounds as the dark colour
+  you intend — the lift is applied for you.
+- **`vignette()` runs at ~62% of the requested strength**, with a wider falloff.
+
+And `page.html` composites every frame through a final grade:
+
+```js
+const GRADE = 'saturate(1.30) contrast(1.05) brightness(1.06)';
+```
+
+Scenes render into an offscreen canvas, then are drawn to the visible one through that
+filter. Keeping the grade in one place is deliberate: hand-tuning colour scene by scene
+makes twelve blocks drift apart, and that drift is very visible across a cut.
+
+If an episode still reads flat, change `GRADE` rather than editing scenes — push
+`saturate` toward ~1.45 before touching anything else. Past ~1.6 the accent colours clip
+and the cut-paper fills start to look like neon.
+
 ## The cut-paper look
 
 Three cheap techniques do most of the work:
