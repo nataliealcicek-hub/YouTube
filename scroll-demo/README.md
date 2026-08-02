@@ -1,6 +1,6 @@
 # scroll-demo
 
-A worked example of the `scroll-cinematic` skill (`.claude/skills/scroll-cinematic/`).
+A worked example of the `canvas-scroll-scrub` skill (`.claude/skills/canvas-scroll-scrub/`).
 
 The page is a scroll-scrubbed canvas frame sequence: a short clip is exported to
 numbered JPGs, preloaded, and the frame painted to `<canvas>` is picked by scroll
@@ -12,8 +12,8 @@ progress.
 
 ```bash
 # any continuous-motion clip, no hard cuts
-bash ../.claude/skills/scroll-cinematic/scripts/extract-frames.sh  <clip.mp4> frames/hero 180
-bash ../.claude/skills/scroll-cinematic/scripts/compress-frames.sh frames/hero 1600 88
+bash ../.claude/skills/canvas-scroll-scrub/scripts/extract-frames.sh  <clip.mp4> frames/hero 180
+bash ../.claude/skills/canvas-scroll-scrub/scripts/compress-frames.sh frames/hero 1600 88
 ```
 
 Then set `frameCount` in the `SCRUB_SECTIONS` block at the bottom of `index.html`

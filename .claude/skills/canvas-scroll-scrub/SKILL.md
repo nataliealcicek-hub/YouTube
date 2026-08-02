@@ -1,9 +1,9 @@
 ---
-name: scroll-cinematic
+name: canvas-scroll-scrub
 description: Build an award-winning "3D scroll" website of ANY kind from ONE prompt — product launch, portfolio, agency, contractor/home-services, restaurant, real estate, personal brand, event, app, etc. Generates a high-end cinematic hero visual + clips (360° orbit, fly-through, reveal, explode, parallax) fitting the site's subject with the Higgsfield MCP, slices them into a scroll-scrubbed canvas frame sequence with ffmpeg, builds a branded multi-section site (Lenis smooth scroll + scroll reveals), and launches it on localhost. Use when the user asks for a "3D scroll" site, scroll-driven hero/reveal, a cinematic landing page, a buckssauce/Apple/Awwwards-style scroll site, or "build me a website like X" — for a product OR a service, person, place, or brand. Trigger words: 3D scroll, scroll animation, cinematic hero, fly-through, turntable, scroll site, landing page, portfolio site, agency site, Higgsfield site.
 ---
 
-# Scroll-Cinematic — one-prompt 3D product sites
+# Canvas Scroll Scrub — one-prompt cinematic scroll sites
 
 ## What this actually is (read first)
 The viral "3D scroll" effect is **not** Three.js. It's a **canvas image-sequence scrub**:
@@ -14,13 +14,32 @@ The "3D" comes entirely from the source video — which we generate with Higgsfi
 
 Stack: plain **HTML + CSS + JS + Lenis** (zero build, runs from any static server).
 
+## Volatile values — VERIFY BEFORE USE (last verified 2026-08-02)
+Everything in this block is a snapshot of a third-party service and drifts silently.
+A stale model ID does not error — it quietly renders something else. Confirm with
+`models_explore` and `balance` before relying on any of it.
+
+| Value | As of 2026-08-02 | Note |
+|---|---|---|
+| Image model | `nano_banana_pro` | Server resolved this to `nano_banana_2` — already drifting. |
+| Video model | `seedance_2_0` | |
+| Fallback video model | `grok_video_v15` @ 720p | More lenient moderation. |
+| `declined_preset_id` | `24bae836-2c4a-48e0-89b6-49fcc0b21612` | Hardcoded UUID; expect it to expire. |
+| Cost | ~54 credits / 1080p clip | Preflight with `get_cost:true` instead of trusting this. |
+
+**Retrieval caveat:** rendered assets are served from a CDN
+(`d8j0ntlcm91z4.cloudfront.net`). Sandboxed environments may block it by egress
+policy, which strands the output — generation succeeds but the files cannot be
+downloaded, so no frames can be sliced. Confirm you can `curl` a completed result
+**before** spending credits on a full set of clips.
+
 ## Prerequisites
 - **Higgsfield MCP** connected + credits (~$1–2 / site). This is the only thing the user must set up.
 - **ffmpeg** — DO NOT ask the user to install it. Step 0 below installs it automatically (no Homebrew).
-- This skill installed at `~/.claude/skills/scroll-cinematic/`.
+- This skill installed at `~/.claude/skills/canvas-scroll-scrub/`.
 
 ### Step 0 — Ensure ffmpeg (run first, always)
-Run `bash ~/.claude/skills/scroll-cinematic/scripts/ensure-ffmpeg.sh`. It uses system ffmpeg if
+Run `bash ~/.claude/skills/canvas-scroll-scrub/scripts/ensure-ffmpeg.sh`. It uses system ffmpeg if
 present, otherwise downloads a static binary to `/tmp/ffmpeg-bin/ffmpeg` (macOS/Linux, no Homebrew).
 The extract/compress scripts already fall back to that path. Never block the build on ffmpeg.
 
