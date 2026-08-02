@@ -47,7 +47,15 @@ The subject is anatomical and pharmacological. Generative video invents plausibl
 | 11 | The GIP half is the twist. GIP receptors sit on fat cells and in the brain, improving how fat is stored, and blunting nausea, so higher doses become tolerable. | Adipocytes shrink and reorganise; the green nausea ripple is damped by a second teal wave; dose dial turns up. |
 | 12 | The result, in trial data: around twenty percent of body weight, lost over seventy-two weeks. Not willpower. A conversation your body was always having, finally translated. | Pull back to the full figure; silhouette narrows; the gut-to-brain teal thread pulses once, calm. |
 
+## Pipeline status — ✅ COMPLETE
+- 12 × locally-rendered clips @ 1920×1080, 30 fps, 10s each: ✅
+- 12 × Seed Audio narration takes (voice Cillian): ✅
+- Final assembly (`explainer_video`, 1920×1080, burned-in captions): ✅ job `1506fa2c-222a-4c2a-9c56-4a585f665ab1`
+- **Final MP4:** https://d8j0ntlcm91z4.cloudfront.net/user_3EMGm7xzkClXL1IjHLUtSDY9muk/hf_20260802_021619_1506fa2c-222a-4c2a-9c56-4a585f665ab1.mp4
+- Runtime: 2:00 exact · **Credits spent: ~13** (Episode 1 was ~1,095 for the same runtime)
+
 ## Assets
-- Narration takes: see `ep2-job-manifest.json`
+- Narration takes + media IDs: `ep2-job-manifest.json`
+- Full asset index and rebuild instructions: `ep2-asset-index.md`
 - Animation source: `animation/ep2/`
-- Final MP4: `output/ep2-glp1-gip.mp4`
+- Silent master: `output/ep2-glp1-gip-silent.mp4`
