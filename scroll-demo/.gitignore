@@ -1,0 +1,4 @@
+# Generated pipeline artifacts — rebuild with the scroll-cinematic scripts.
+frames/
+*.mp4
+verify-shot.png
