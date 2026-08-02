@@ -17,34 +17,63 @@ function motes(ctx, W, H, t, n, color, alpha) {
   }, 1.05);
 }
 
-/* ---------- 1. the mineral that has to be there — and mostly isn't enough ---------- */
+/* ---------- 1. HOOK — open inside a beating heart, then pull out ----------
+   The previous version opened on a near-static figure and built slowly, which
+   measured badly: hook 43 against a sustain of 99. Attention peaked at t=0 and
+   fell through the hook window. So this starts already mid-contraction, hard on
+   frame one, and earns the wide shot by pulling back out of it. */
 function scene1(ctx, t, W, H) {
   bg(ctx, W, H, '#241748', '#080513');
   motes(ctx, W, H, t, 40, P.teal, .16);
 
-  const z = lerp(.88, 1.02, easeInOut(t / DUR));
-  ctx.save();
-  ctx.translate(W / 2, H / 2 + 30);
-  ctx.scale(z, z);
+  // the pull-back: deep inside the chest at t=0, whole body by ~4s
+  const out = easeInOut(clamp((t - 0.9) / 3.1, 0, 1));
+  const z = lerp(4.2, 1.0, out) * lerp(1, 1.02, smoothstep(4.5, DUR, t));
 
+  const FOx = W / 2, FOy = H / 2 + 30;
+  const hx = FOx + 26, hy = FOy - 196;          // the heart, our entry point
+
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.scale(z, z);
+  ctx.translate(-hx, -hy);
+  ctx.translate(FOx, FOy);                       // now in figure-local space
+
+  // body appears as we retreat far enough to see it
+  const bodyA = smoothstep(0.8, 2.6, t);
+  ctx.globalAlpha = bodyA;
   paper(ctx, () => figurePath(ctx, 0), hexA(P.cream, .12), .28, 8, 12);
   strokePath(ctx, () => figurePath(ctx, 0), hexA(P.cream, .40), 3);
+  ctx.globalAlpha = 1;
 
-  // three demands, arriving one after another: heart, muscle, nerve
-  const beats = [
-    { x: 26, y: -196, on: smoothstep(.4, 1.6, t), period: 1.05, label: 'HEARTBEAT' },
-    { x: -104, y: -70, on: smoothstep(2.4, 3.6, t), period: 2.1, label: 'MUSCLE RELEASE' },
-    { x: 8, y: -330, on: smoothstep(4.6, 5.8, t), period: 1.5, label: 'NERVE QUIET' },
-  ];
-  beats.forEach((b, i) => {
+  // the heartbeat itself — running hard from frame one
+  const bpm = 1.05;
+  const beatPhase = (t % bpm) / bpm;
+  const kick = Math.pow(1 - beatPhase, 3) + .35 * Math.pow(1 - ((t + .18) % bpm) / bpm, 6);
+  glow(ctx, 26, -196, 150 + 210 * kick, P.teal, .55 + .35 * kick);
+  blobPath(ctx, 26, -196, 30 + 16 * kick, .07, t * 2, 4, 6);
+  ctx.fillStyle = hexA(P.teal, .55 + .45 * kick); ctx.fill();
+
+  // shockwaves leaving the heart on each beat — the motion that holds frame one
+  for (let r = 0; r < 3; r++) {
+    const ph = (((t / bpm) + r / 3) % 1);
+    ctx.strokeStyle = hexA(P.teal, (1 - ph) * .5 * (1 - out * .55));
+    ctx.lineWidth = (16 * (1 - ph) + 2) / Math.max(1, z * .5);
+    ctx.beginPath(); ctx.arc(26, -196, 40 + ph * 420, 0, TAU); ctx.stroke();
+  }
+
+  // the other two demands arrive once the body is readable
+  [{ x: -104, y: -70, on: smoothstep(3.4, 4.4, t), period: 2.1, c: P.amber },
+   { x: 8, y: -330, on: smoothstep(5.2, 6.2, t), period: 1.5, c: P.teal },
+  ].forEach((b, i) => {
     const f = b.on * (.35 + .65 * pulse(t + i * .3, b.period, 7));
-    glow(ctx, b.x, b.y, 150, i === 1 ? P.amber : P.teal, .42 * f);
+    glow(ctx, b.x, b.y, 150, b.c, .42 * f);
     blobPath(ctx, b.x, b.y, 30, .07, t + i, i * 4, 6);
-    ctx.fillStyle = hexA(i === 1 ? P.amber : P.teal, .35 + .45 * f); ctx.fill();
+    ctx.fillStyle = hexA(b.c, .35 + .45 * f); ctx.fill();
   });
 
-  // the supply: too few ions drifting, and thinning as the block runs
-  const scarce = 1 - smoothstep(5.6, 9.4, t) * .55;
+  // the supply: too few ions, thinning as the block runs
+  const scarce = (1 - smoothstep(6.2, 9.4, t) * .55) * smoothstep(2.2, 3.6, t);
   for (let i = 0; i < 16; i++) {
     const ph = ((t * .12 + rnd(i)) % 1);
     const x = lerp(-150, 150, rnd(i + 30)) + Math.sin(t * .6 + i) * 26;
@@ -55,8 +84,13 @@ function scene1(ctx, t, W, H) {
   }
   ctx.restore();
 
-  label(ctx, W * .17, H * .26, W / 2 + 26, H / 2 - 166, 'MAGNESIUM', smoothstep(6.4, 7.8, t), P.teal);
-  vignette(ctx, W, H, .78); grain(ctx, W, H, .1, document); seams(ctx, W, H, t, DUR);
+  label(ctx, W * .17, H * .26, W / 2 + 26, H / 2 - 166, 'MAGNESIUM', smoothstep(6.6, 7.8, t), P.teal);
+  vignette(ctx, W, H, .78); grain(ctx, W, H, .1, document);
+
+  // a normal seam would fade the first half-second to black and waste the kick,
+  // so this block opens almost instantly and only dips out at the end
+  const a = 1 - smoothstep(0, .10, t) * smoothstep(0, .55, DUR - t);
+  if (a > .001) { ctx.fillStyle = `rgba(8,4,8,${a})`; ctx.fillRect(0, 0, W, H); }
 }
 
 /* ---------- 2. where the 25 grams actually sit ---------- */
