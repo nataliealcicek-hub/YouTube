@@ -4,13 +4,17 @@
 
 const DUR = 10;
 
+/* Ambient motes sit on a far plane, so they drift against the subject rather
+   than with it — the cheapest read of depth available. */
 function motes(ctx, W, H, t, n, color, alpha) {
-  for (let i = 0; i < n; i++) {
-    const x = (rrange(i, 0, W) + t * rrange(i + 500, -12, 12) + W) % W;
-    const y = (rrange(i + 90, 0, H) + t * rrange(i + 700, -18, -3) + H * 2) % H;
-    ctx.fillStyle = hexA(color, alpha * (.3 + .7 * Math.abs(Math.sin(t * .6 + i))));
-    ctx.beginPath(); ctx.arc(x, y, rrange(i + 40, 1.2, 3.4), 0, TAU); ctx.fill();
-  }
+  layer(ctx, W, H, camera(t, DUR), 0.06, () => {
+    for (let i = 0; i < n; i++) {
+      const x = (rrange(i, 0, W) + t * rrange(i + 500, -12, 12) + W) % W;
+      const y = (rrange(i + 90, 0, H) + t * rrange(i + 700, -18, -3) + H * 2) % H;
+      ctx.fillStyle = hexA(color, alpha * (.3 + .7 * Math.abs(Math.sin(t * .6 + i))));
+      ctx.beginPath(); ctx.arc(x, y, rrange(i + 40, 1.2, 3.4), 0, TAU); ctx.fill();
+    }
+  }, 1.05);
 }
 
 /* ---------- 1. the mineral that has to be there — and mostly isn't enough ---------- */
@@ -120,18 +124,21 @@ function scene2(ctx, t, W, H) {
 function scene3(ctx, t, W, H) {
   bg(ctx, W, H, '#15234A', '#060411');
 
-  // enzymes waiting in the background, firing once ATP becomes usable
+  // enzymes waiting in the background, firing once ATP becomes usable —
+  // held on a far plane so the ATP molecule reads as nearer to camera
   const mg = smoothstep(2.2, 4.4, t);
   const fire = smoothstep(5.6, 7.0, t) * (1 - smoothstep(8.4, 9.6, t));
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * TAU + t * .05;
-    const x = W * .5 + Math.cos(a) * (W * .38), y = H * .5 + Math.sin(a) * (H * .40);
-    const f = mg * (.3 + .7 * pulse(t + i * .21, 1.7, 8));
-    glow(ctx, x, y, 110, P.gold, .45 * f);
-    blobPath(ctx, x, y, 30, .07, t + i, i * 3, 6);
-    ctx.fillStyle = hexA(P.gold, .30 + .55 * f); ctx.fill();
-    ctx.strokeStyle = hexA(P.cream, .35); ctx.lineWidth = 2.5; ctx.stroke();
-  }
+  layer(ctx, W, H, camera(t, DUR), 0.12, () => {
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * TAU + t * .05;
+      const x = W * .5 + Math.cos(a) * (W * .38), y = H * .5 + Math.sin(a) * (H * .40);
+      const f = mg * (.3 + .7 * pulse(t + i * .21, 1.7, 8));
+      glow(ctx, x, y, 110, P.gold, .45 * f);
+      blobPath(ctx, x, y, 30, .07, t + i, i * 3, 6);
+      ctx.fillStyle = hexA(P.gold, .30 + .55 * f); ctx.fill();
+      ctx.strokeStyle = hexA(P.cream, .35); ctx.lineWidth = 2.5; ctx.stroke();
+    }
+  }, 1.04);
 
   const s = lerp(2.3, 1.75, smoothstep(0, 4, t));
   ctx.save();
