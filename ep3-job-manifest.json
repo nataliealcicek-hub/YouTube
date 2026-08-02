@@ -1,0 +1,43 @@
+{
+  "episode": 3,
+  "note": "vertical 9:16 assembly in progress; Higgsfield MCP kept dropping mid-import",
+  "source_commit": "2675514461051e13296be625ab847038e0bfb4bb",
+  "vertical_clip_media_ids_imported": {
+    "1": "8e330e99-4f57-496b-92dd-e217aba5c325",
+    "2": "b00bd59a-0206-4af1-8d2d-0b83fd79d9f7",
+    "3": "3cf4cdc7-51b7-4f69-ad49-97b0f0e6a0e0",
+    "4": "d1204b55-ddf4-40d1-bf66-2a74464c353d",
+    "5": "1b553944-54ed-470c-b6e5-0341f9c48a0c",
+    "6": "170ecd18-58ec-488f-a1fd-857f138bcac7"
+  },
+  "vertical_clips_still_to_import": [
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "narration_job_ids_reusable": {
+    "1": "0c20fb49-7daf-4611-8bd2-236b02ad5877",
+    "2": "f783cc44-873e-4f24-ac8f-0714d43c27a9",
+    "3": "eb46b2e8-1346-4c6a-8559-b77f38579207",
+    "4": "c9685aa4-e04d-4110-afd4-9c4d080dc029",
+    "5": "c7d45df5-e533-4b14-b576-a67073bab535",
+    "6": "3ee2aeaf-0b80-43bf-89ff-a1d66e6b876d",
+    "7": "a663032b-df7f-43a4-9168-3cb1cf7e74d7",
+    "8": "96b62d05-4b2f-47a4-8f68-d2cd96717425",
+    "9": "6c98443c-3e33-461f-94e2-f1ae204f5aab",
+    "10": "3905b9aa-f9c6-4063-97e4-6d65abaab847",
+    "11": "a688e70d-99b0-4c2e-b5ec-d28d129cefc1",
+    "12": "0a219dfa-c26d-40a8-be23-711e67b7e678"
+  },
+  "import_url_pattern": "https://cdn.jsdelivr.net/gh/nataliealcicek-hub/YouTube@2675514461051e13296be625ab847038e0bfb4bb/animation/ep3/clips-vertical/block-NN.mp4",
+  "virality": {
+    "clip": "hook block 1",
+    "viral_potential": 55,
+    "overall": 58,
+    "hook_0_3s": 43,
+    "sustain": 99
+  }
+}
