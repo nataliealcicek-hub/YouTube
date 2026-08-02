@@ -95,6 +95,9 @@ function encodeScene(idx, frames, ffmpeg) {
       (errors.join('\n  ') || '(none captured — check the <script> tags)'));
   });
 
+  // drive the canvas size from here so one scene set can output any aspect
+  await page.evaluate(([w, h]) => setSize(w, h), [W, H]);
+
   const count = await page.evaluate(() => SCENES.length);
   const dur = await page.evaluate(() => (typeof DUR === 'number' ? DUR : 10));
   const list = picked.length ? picked.map(n => n - 1) : [...Array(count).keys()];

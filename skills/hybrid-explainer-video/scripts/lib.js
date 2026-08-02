@@ -16,6 +16,13 @@ const P = {
   acid:    '#DDF04F',
   sick:    '#8FD07A',
   grey:    '#7A707A',
+  /* Episode 3 colour code */
+  lav:     '#C6A0FF',   // glycine
+  lavDeep: '#8A5FCE',
+  amber:   '#FFB44F',   // calcium
+  amberDeep:'#D4821F',
+  slate:   '#221542',   // environment
+  chalk:   '#E5DACA',   // undissolved mineral
 };
 
 const TAU = Math.PI * 2;
@@ -60,8 +67,8 @@ function grain(ctx, W, H, alpha, doc) {
   ctx.restore();
 }
 
-/* Brighten and saturate a hex colour. Used to lift the scene backgrounds in one
-   place rather than retuning twelve scenes by hand. */
+/* Brighten and saturate a hex colour. Lifting the background here fixes every
+   scene at once instead of retuning twelve by hand. */
 function lift(hex, gain, sat) {
   const n = parseInt(hex.slice(1), 16);
   let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -72,7 +79,7 @@ function lift(hex, gain, sat) {
   return `rgb(${Math.round(clamp(r, 0, 255))},${Math.round(clamp(g, 0, 255))},${Math.round(clamp(b, 0, 255))})`;
 }
 
-/* The vignette was crushing the mid-tones; keep the framing but lighten it. */
+/* Frame the shot without crushing the mid-tones. */
 function vignette(ctx, W, H, strength) {
   const g = ctx.createRadialGradient(W / 2, H / 2, H * .30, W / 2, H / 2, H * .92);
   g.addColorStop(0, 'rgba(0,0,0,0)');
@@ -87,6 +94,59 @@ function bg(ctx, W, H, inner, outer) {
   g.addColorStop(1, lift(outer, 1.5, 1.4));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- 2.5D camera ----------
+   Scenes stay flat, but they are composited onto depth planes and viewed
+   through a slowly drifting camera. Near planes move further than far ones,
+   which is what the eye reads as space. Everything is a function of t, so
+   frames remain independently reproducible. */
+function camera(t, dur, amp) {
+  amp = amp === undefined ? 1 : amp;
+  const u = clamp(t / dur, 0, 1);
+  return {
+    x: Math.sin(u * Math.PI * 0.85 + 0.5) * 46 * amp,
+    y: Math.cos(u * Math.PI * 0.65 + 0.2) * 26 * amp,
+    z: lerp(-0.035, 0.045, easeInOut(u)) * amp,    // gentle dolly
+    roll: Math.sin(u * Math.PI * 0.55) * 0.0045 * amp,
+  };
+}
+
+/* Draw fn on a plane at `depth` (0 = far, 1 = near) as seen by camera c.
+   `base` scales the plane up so its edges never slide into frame. */
+function layer(ctx, W, H, c, depth, fn, base) {
+  const par = depth - 0.5;                          // signed distance from focal plane
+  const s = (base || 1) * (1 + c.z * (0.5 + depth * 1.7));
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(c.roll * (0.35 + depth));
+  ctx.scale(s, s);
+  ctx.translate(-c.x * par * 2.6, -c.y * par * 2.6);
+  ctx.translate(-W / 2, -H / 2);
+  fn();
+  ctx.restore();
+}
+
+/* Near-field particles drifting in front of everything. Because they sit at
+   depth ~1 they swing much further than the scene, which sells the depth
+   more cheaply than anything happening inside the scene itself. */
+function foreDust(ctx, W, H, t, c, color, n, alpha) {
+  layer(ctx, W, H, c, 1.0, () => {
+    for (let i = 0; i < (n || 18); i++) {
+      const x = (rrange(i, -200, W + 200) + Math.sin(t * .18 + i) * 60);
+      const y = (rrange(i + 300, -100, H + 100) + t * rrange(i + 90, -9, 9));
+      const r = rrange(i + 50, 5, 16);
+      const a = (alpha || .1) * (.35 + .65 * Math.abs(Math.sin(t * .4 + i)));
+      const g = ctx.createRadialGradient(x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, 0,
+                                         x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, r * 3.2);
+      g.addColorStop(0, hexA(color, a));
+      g.addColorStop(1, hexA(color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, ((y % (H + 200)) + H + 200) % (H + 200) - 100, r * 3.2, 0, TAU);
+      ctx.fill();
+    }
+  });
 }
 
 /* ---------- primitives ---------- */
